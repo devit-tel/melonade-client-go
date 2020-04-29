@@ -4,9 +4,11 @@ import (
 	"bytes"
 	"crypto/tls"
 	"fmt"
+	"io/ioutil"
 	"net/http"
 	"net/url"
 
+	"github.com/devit-tel/goerror"
 	json "github.com/json-iterator/go"
 )
 
@@ -32,7 +34,7 @@ func (c *Client) StartWorkflow(workflowName, revision, transactionId string, pay
 	if payload != nil {
 		jsonData, err := json.Marshal(payload)
 		if err != nil {
-			return nil, err
+			return nil, errWithInput(ErrUnableParseInputPayload, workflowName, revision, transactionId, payload).WithCause(err)
 		}
 
 		data = jsonData
@@ -40,29 +42,39 @@ func (c *Client) StartWorkflow(workflowName, revision, transactionId string, pay
 
 	path, err := url.Parse(fmt.Sprintf("/v1/transaction/%s/%s?transactionId=%s", workflowName, revision, transactionId))
 	if err != nil {
-		return nil, err
+		return nil, errWithInput(ErrUnableParseUrlRequest, workflowName, revision, transactionId, payload).WithCause(err)
 	}
 
 	req, err := http.NewRequest(http.MethodPost, fmt.Sprint(c.processManagerEndpoint+path.EscapedPath()), bytes.NewBuffer(data))
 	if err != nil {
-		return nil, err
+		return nil, errWithInput(ErrUnableCreateRequestStartWorkflow, workflowName, revision, transactionId, payload).WithCause(err)
 	}
 
 	req.Header.Set("Content-Type", "application/json")
 
 	resp, err := c.httpClient.Do(req)
 	if err != nil {
-		return nil, err
+		return nil, errWithInput(ErrUnableStartWorkflow, workflowName, revision, transactionId, payload).WithCause(err)
 	}
 	defer resp.Body.Close()
-	
-	//bodyBytes, _ := ioutil.ReadAll(resp.Body)
-	//fmt.Println(string(bodyBytes))
+
 	workflowResp := &StartWorkflowResponse{}
 	if err := json.NewDecoder(resp.Body).Decode(workflowResp); err != nil {
-		fmt.Println("FAILED DECODE")
-		return nil, err
+		if bodyBytes, errReadIO := ioutil.ReadAll(resp.Body); errReadIO != nil {
+			return nil, ErrUnableParseOutputPayload.WithKeyValueInput(
+				"responseBody", string(bodyBytes)).WithCause(err)
+		}
+
+		return nil, errWithInput(ErrUnableParseOutputPayload, workflowName, revision, transactionId, payload).WithCause(err)
 	}
 
 	return workflowResp, nil
+}
+
+func errWithInput(err goerror.Error, workflowName, revision, transactionId string, payload interface{}) goerror.Error {
+	return err.WithKeyValueInput(
+		"workflowName", workflowName,
+		"revision", revision,
+		"transactionId", transactionId,
+		"payload", payload).WithCause(err)
 }
