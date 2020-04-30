@@ -3,6 +3,7 @@
 package melonade_client_go
 
 import (
+	"context"
 	"testing"
 
 	"github.com/devit-tel/goxid"
@@ -17,7 +18,7 @@ func TestClient_StartWorkflow(t *testing.T) {
 		uuid := goxid.New()
 
 		t.Run("success", func(t *testing.T) {
-			resp, err := client.StartWorkflow("simple", "1", uuid.Gen(), nil)
+			resp, err := client.StartWorkflow(context.Background(), "simple", "1", uuid.Gen(), nil)
 
 			require.NoError(t, err)
 			require.True(t, resp.Success)
@@ -27,14 +28,13 @@ func TestClient_StartWorkflow(t *testing.T) {
 		})
 
 		t.Run("fail workflow not found", func(t *testing.T) {
-			resp, err := client.StartWorkflow("not_found_workflow", "1", "unknown_id", nil)
+			resp, err := client.StartWorkflow(context.Background(), "not_found_workflow", "1", "unknown_id", nil)
 
 			require.NoError(t, err)
 			require.False(t, resp.Success)
 			require.Empty(t, resp.Data)
 			require.Equal(t, resp.Error.Message, "Workflow not found")
 			require.NotEmpty(t, resp.Error.Stack)
-
 		})
 	})
 }

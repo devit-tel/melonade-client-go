@@ -2,6 +2,7 @@ package melonade_client_go
 
 import (
 	"bytes"
+	"context"
 	"crypto/tls"
 	"fmt"
 	"io/ioutil"
@@ -29,7 +30,7 @@ func New(processManagerEndpoint string) Service {
 	}
 }
 
-func (c *Client) StartWorkflow(workflowName, revision, transactionId string, payload interface{}) (*StartWorkflowResponse, error) {
+func (c *Client) StartWorkflow(ctx context.Context, workflowName, revision, transactionId string, payload interface{}) (*StartWorkflowResponse, goerror.Error) {
 	var data []byte
 	if payload != nil {
 		jsonData, err := json.Marshal(payload)
