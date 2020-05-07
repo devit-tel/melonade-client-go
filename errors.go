@@ -10,4 +10,5 @@ var (
 	ErrUnableParseOutputPayload         = goerror.DefineBadRequest("UnableParseInputPayload", "unable parse output payload")
 	ErrUnableCreateRequestStartWorkflow = goerror.DefineInternalServerError("UnableCreateRequestStartWorkflow", "unable create request start workflow")
 	ErrUnableStartWorkflow              = goerror.DefineInternalServerError("UnableStartWorkflow", "unable start workflow")
+	ErrUnableParseKafkaVersion          = goerror.DefineInternalServerError("UnableParseKafkaVersion", "unable parse kafka version")
 )
