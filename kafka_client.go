@@ -12,7 +12,7 @@ import (
 	"github.com/devit-tel/goerror"
 )
 
-type kafkaClient struct {
+type KafkaClient struct {
 	namespace    string
 	kafkaServers []string
 	config       *sarama.Config
@@ -30,7 +30,7 @@ func NewTaskResult(t *Task) *taskResult {
 	}
 }
 
-func NewWorkerClient(kafkaServers string, namespace string, kafkaVersion string) (*kafkaClient, goerror.Error) {
+func NewWorkerClient(kafkaServers string, namespace string, kafkaVersion string) (*KafkaClient, goerror.Error) {
 	config := sarama.NewConfig()
 
 	kfv, err := sarama.ParseKafkaVersion(kafkaVersion) // kafkaVersion is the version of kafka server like 0.11.0.2
@@ -58,10 +58,10 @@ func NewWorkerClient(kafkaServers string, namespace string, kafkaVersion string)
 		return nil, ErrUnableToCreateProducer.WithCause(err)
 	}
 
-	return &kafkaClient{namespace, ks, config, pd}, nil
+	return &KafkaClient{namespace, ks, config, pd}, nil
 }
 
-func (w *kafkaClient) NewWorker(taskName string, tcb func(t *Task) *taskResult, ccb func(t *Task) *taskResult) goerror.Error {
+func (w *KafkaClient) NewWorker(taskName string, tcb func(t *Task) *taskResult, ccb func(t *Task) *taskResult) goerror.Error {
 	c, err := sarama.NewConsumerGroup(w.kafkaServers, fmt.Sprintf(`melonade-%s.client`, w.namespace), w.config)
 	if err != nil {
 		return ErrUnableToCreateConsumer.WithCause(err)
@@ -82,7 +82,7 @@ func (w *kafkaClient) NewWorker(taskName string, tcb func(t *Task) *taskResult, 
 }
 
 // Async update task
-func (w *kafkaClient) UpdateTask(tr *taskResult) {
+func (w *KafkaClient) UpdateTask(tr *taskResult) {
 	trs, _ := json.Marshal(tr)
 
 	w.producer.Input() <- &sarama.ProducerMessage{
@@ -93,7 +93,7 @@ func (w *kafkaClient) UpdateTask(tr *taskResult) {
 }
 
 // Async start transaction
-func (w *kafkaClient) StartTransaction(tID string, wName string, wRev string, input interface{}, tags []string) {
+func (w *KafkaClient) StartTransaction(tID string, wName string, wRev string, input interface{}, tags []string) {
 	c := commandStartTransaction{
 		TransactionID: tID,
 		Type:          CommandTypeStartTransaction,
@@ -116,7 +116,7 @@ func (w *kafkaClient) StartTransaction(tID string, wName string, wRev string, in
 
 // WorkerHandler
 type WorkerHandler struct {
-	w                  *kafkaClient
+	w                  *KafkaClient
 	taskCallback       func(t *Task) *taskResult
 	compensateCallback func(t *Task) *taskResult
 }
