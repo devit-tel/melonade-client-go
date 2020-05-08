@@ -31,8 +31,6 @@ func NewTaskResult(t *Task) *taskResult {
 }
 
 func NewWorkerClient(kafkaServers string, namespace string, kafkaVersion string) (*kafkaClient, goerror.Error) {
-	ks := strings.Split(kafkaServers, ",")
-
 	config := sarama.NewConfig()
 
 	kfv, err := sarama.ParseKafkaVersion(kafkaVersion) // kafkaVersion is the version of kafka server like 0.11.0.2
@@ -54,6 +52,7 @@ func NewWorkerClient(kafkaServers string, namespace string, kafkaVersion string)
 	config.Producer.Flush.MaxMessages = 100
 	config.Producer.Flush.Frequency = time.Millisecond
 
+	ks := strings.Split(kafkaServers, ",")
 	pd, err := sarama.NewAsyncProducer(ks, config)
 	if err != nil {
 		return nil, goerror.DefineInternalServerError("UnableToCreateProducer", fmt.Sprint(err))
