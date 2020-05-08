@@ -30,7 +30,7 @@ func NewTaskResult(t *Task) *taskResult {
 	}
 }
 
-func NewWorkerClient(kafkaServers string, namespace string, kafkaVersion string) (*KafkaClient, goerror.Error) {
+func NewKafkaClient(kafkaServers string, namespace string, kafkaVersion string) (*KafkaClient, goerror.Error) {
 	config := sarama.NewConfig()
 
 	kfv, err := sarama.ParseKafkaVersion(kafkaVersion) // kafkaVersion is the version of kafka server like 0.11.0.2
