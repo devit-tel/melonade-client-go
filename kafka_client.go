@@ -55,7 +55,7 @@ func NewWorkerClient(kafkaServers string, namespace string, kafkaVersion string)
 	ks := strings.Split(kafkaServers, ",")
 	pd, err := sarama.NewAsyncProducer(ks, config)
 	if err != nil {
-		return nil, goerror.DefineInternalServerError("UnableToCreateProducer", fmt.Sprint(err))
+		return nil, ErrUnableToCreateProducer.WithCause(err)
 	}
 
 	return &kafkaClient{namespace, ks, config, pd}, nil
@@ -64,7 +64,7 @@ func NewWorkerClient(kafkaServers string, namespace string, kafkaVersion string)
 func (w *kafkaClient) NewWorker(taskName string, tcb func(t *Task) *taskResult, ccb func(t *Task) *taskResult) goerror.Error {
 	c, err := sarama.NewConsumerGroup(w.kafkaServers, fmt.Sprintf(`melonade-%s.client`, w.namespace), w.config)
 	if err != nil {
-		return goerror.DefineInternalServerError("UnableToCreateConsumer", fmt.Sprint(err))
+		return ErrUnableToCreateConsumer.WithCause(err)
 	}
 
 	wh := WorkerHandler{w, tcb, ccb}
