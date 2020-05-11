@@ -82,7 +82,7 @@ type Task struct {
 	Logs              []interface{} `json:"logs"`
 }
 
-type taskResult struct {
+type TaskResult struct {
 	TransactionID string        `json:"transactionId"`
 	TaskID        string        `json:"taskId"`
 	Status        TaskStatus    `json:"status"`
