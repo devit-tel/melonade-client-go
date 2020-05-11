@@ -25,7 +25,7 @@ func TestWorkerClient(t *testing.T) {
 		for _, tn := range taskNames {
 			err := cli.NewWorker(
 				tn,
-				func(t *Task) *taskResult {
+				func(t *Task) *TaskResult {
 					defer wg.Done()
 					tr := NewTaskResult(t)
 					tr.Status = TaskStatusCompleted
@@ -33,7 +33,7 @@ func TestWorkerClient(t *testing.T) {
 					log.Printf(`Procressing %s (%s)`, t.TaskName, t.TaskID)
 					return tr
 				},
-				func(t *Task) *taskResult {
+				func(t *Task) *TaskResult {
 					tr := NewTaskResult(t)
 					tr.Status = TaskStatusCompleted
 					tr.Output = fmt.Sprintf(`Hello from %v`, t.TaskName)

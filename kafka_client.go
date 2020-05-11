@@ -19,8 +19,8 @@ type KafkaClient struct {
 	producer     sarama.AsyncProducer
 }
 
-func NewTaskResult(t *Task) *taskResult {
-	return &taskResult{
+func NewTaskResult(t *Task) *TaskResult {
+	return &TaskResult{
 		TransactionID: t.TransactionID,
 		TaskID:        t.TaskID,
 		Status:        t.Status,
@@ -61,13 +61,13 @@ func NewKafkaClient(kafkaServers string, namespace string, kafkaVersion string) 
 	return &KafkaClient{namespace, ks, config, pd}, nil
 }
 
-func (w *KafkaClient) NewWorker(taskName string, tcb func(t *Task) *taskResult, ccb func(t *Task) *taskResult) goerror.Error {
+func (w *KafkaClient) NewWorker(taskName string, tcb func(t *Task) *TaskResult, ccb func(t *Task) *TaskResult) goerror.Error {
 	c, err := sarama.NewConsumerGroup(w.kafkaServers, fmt.Sprintf(`melonade-%s.client`, w.namespace), w.config)
 	if err != nil {
 		return ErrUnableToCreateConsumer.WithCause(err)
 	}
 
-	wh := WorkerHandler{w, tcb, ccb}
+	wh := workerHandler{w, tcb, ccb}
 	ctx := context.Background()
 	go func() {
 		for {
@@ -82,7 +82,7 @@ func (w *KafkaClient) NewWorker(taskName string, tcb func(t *Task) *taskResult, 
 }
 
 // Async update task
-func (w *KafkaClient) UpdateTask(tr *taskResult) {
+func (w *KafkaClient) UpdateTask(tr *TaskResult) {
 	trs, _ := json.Marshal(tr)
 
 	w.producer.Input() <- &sarama.ProducerMessage{
@@ -114,21 +114,21 @@ func (w *KafkaClient) StartTransaction(tID string, wName string, wRev string, in
 	}
 }
 
-// WorkerHandler
-type WorkerHandler struct {
+// workerHandler
+type workerHandler struct {
 	w                  *KafkaClient
-	taskCallback       func(t *Task) *taskResult
-	compensateCallback func(t *Task) *taskResult
+	taskCallback       func(t *Task) *TaskResult
+	compensateCallback func(t *Task) *TaskResult
 }
 
 // Setup is run at the beginning of a new session, before ConsumeClaim
-func (wh *WorkerHandler) Setup(sarama.ConsumerGroupSession) error { return nil }
+func (wh *workerHandler) Setup(sarama.ConsumerGroupSession) error { return nil }
 
 // Cleanup is run at the end of a session, once all ConsumeClaim goroutines have exited
-func (wh *WorkerHandler) Cleanup(sarama.ConsumerGroupSession) error { return nil }
+func (wh *workerHandler) Cleanup(sarama.ConsumerGroupSession) error { return nil }
 
 // ConsumeClaim must start a consumer loop of ConsumerGroupClaim's Messages().
-func (wh *WorkerHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+func (wh *workerHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
 	var wg sync.WaitGroup
 	for m := range claim.Messages() {
 		wg.Add(1)
