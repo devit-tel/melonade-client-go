@@ -12,7 +12,7 @@ import (
 
 func TestWorkerClient(t *testing.T) {
 	t.Run("Create worker client", func(t *testing.T) {
-		const batchNumber = 1000
+		const batchNumber = 100
 		transactionPrefix := time.Now().Format("2006-01-02T-15-04-05")
 		cli, err := NewKafkaClient("localhost:29092", "docker-compose", "2.3.1")
 		if err != nil {
@@ -46,12 +46,31 @@ func TestWorkerClient(t *testing.T) {
 			}
 		}
 
+		watcher, err := cli.NewEventWatcher("local-test")
+		totalTransactionEvent := batchNumber * 2
+		totalWorkflowEvent := batchNumber * 2
+		wg.Add(totalTransactionEvent + totalWorkflowEvent)
+
+		go func() {
+			for {
+				select {
+				case e := <-watcher.ChanTransaction:
+					log.Printf("Transaction %s was %s", e.TransactionID, e.Details.Status)
+					wg.Done()
+				case e := <-watcher.ChanWorkflow:
+					log.Printf("Transaction %s was %s", e.TransactionID, e.Details.Status)
+					wg.Done()
+				}
+			}
+		}()
+
 		time.Sleep(5 * time.Second) // Wait for kafka consumer group rebalanced
 		for i := 0; i < batchNumber; i++ {
 			transactionID := fmt.Sprintf(`test-%s-%d`, transactionPrefix, i)
 			go cli.StartTransaction(transactionID, "simple", "1", nil, []string{"test"})
 			log.Printf("Started transaction %s\n", transactionID)
 		}
+
 		wg.Wait()                   // Wait for all worker to finish (if everything work correctly)
 		time.Sleep(1 * time.Second) // Wait for producer sent message
 	})
