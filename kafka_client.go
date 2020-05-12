@@ -98,11 +98,11 @@ func (w *KafkaClient) NewWorker(taskName string, tcb func(t *Task) *TaskResult, 
 	return nil
 }
 
-func (w *KafkaClient) NewEventWatcher(serviceName string) goerror.Error {
+func (w *KafkaClient) NewEventWatcher(serviceName string) (*Watcher, goerror.Error) {
 	c, err := sarama.NewConsumerGroup(w.kafkaServers,
 		fmt.Sprintf(`melonade-%s-event-watcher-%s`, w.namespace, serviceName), w.config)
 	if err != nil {
-		return ErrUnableToCreateConsumer.WithCause(err)
+		return nil, ErrUnableToCreateConsumer.WithCause(err)
 	}
 
 	wh := eventWatcherHandler{
@@ -128,7 +128,7 @@ func (w *KafkaClient) NewEventWatcher(serviceName string) goerror.Error {
 			}
 		}
 	}()
-	return nil
+	return wh.Watcher, nil
 }
 
 // Async update task
@@ -240,7 +240,11 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 			session.MarkMessage(m, "")
 
 			var be baseEvent
-			json.Unmarshal(m.Value, be)
+			err := json.Unmarshal(m.Value, &be)
+			if err != nil {
+				log.Println(err)
+				return
+			}
 
 			if be.IsError == true {
 				switch be.Type {
@@ -249,6 +253,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 					err := json.Unmarshal(m.Value, e)
 					if err != nil {
 						log.Println(err)
+						return
 					}
 					eh.cTransactionErr <- e
 				case EventTypeWorkflow:
@@ -256,6 +261,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 					err := json.Unmarshal(m.Value, e)
 					if err != nil {
 						log.Println(err)
+						return
 					}
 					eh.cWorkflowErr <- e
 				case EventTypeTask:
@@ -263,6 +269,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 					err := json.Unmarshal(m.Value, e)
 					if err != nil {
 						log.Println(err)
+						return
 					}
 					eh.cTaskErr <- e
 				case EventTypeSystem:
@@ -270,6 +277,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 					err := json.Unmarshal(m.Value, e)
 					if err != nil {
 						log.Println(err)
+						return
 					}
 					eh.cSystemErr <- e
 				}
@@ -281,6 +289,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 					err := json.Unmarshal(m.Value, e)
 					if err != nil {
 						log.Println(err)
+						return
 					}
 					eh.cTransaction <- e
 				case EventTypeWorkflow:
@@ -288,6 +297,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 					err := json.Unmarshal(m.Value, e)
 					if err != nil {
 						log.Println(err)
+						return
 					}
 					eh.cWorkflow <- e
 				case EventTypeTask:
@@ -295,6 +305,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 					err := json.Unmarshal(m.Value, e)
 					if err != nil {
 						log.Println(err)
+						return
 					}
 					eh.cTask <- e
 				case EventTypeSystem:
@@ -302,6 +313,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 					err := json.Unmarshal(m.Value, e)
 					if err != nil {
 						log.Println(err)
+						return
 					}
 					eh.cSystem <- e
 				}
