@@ -21,14 +21,14 @@ type KafkaClient struct {
 }
 
 type Watcher struct {
-	cTransaction    chan *eventTransaction
-	cTransactionErr chan *eventTransactionError
-	cWorkflow       chan *eventWorkflow
-	cWorkflowErr    chan *eventWorkflowError
-	cTask           chan *eventTask
-	cTaskErr        chan *eventTaskError
-	cSystem         chan *eventSystem
-	cSystemErr      chan *eventSystemError
+	ChanTransaction    chan *eventTransaction
+	ChanTransactionErr chan *eventTransactionError
+	ChanWorkflow       chan *eventWorkflow
+	ChanWorkflowErr    chan *eventWorkflowError
+	ChanTask           chan *eventTask
+	ChanTaskErr        chan *eventTaskError
+	ChanSystem         chan *eventSystem
+	ChanSystemErr      chan *eventSystemError
 }
 
 func NewTaskResult(t *Task) *TaskResult {
@@ -255,7 +255,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 						log.Println(err)
 						return
 					}
-					eh.cTransactionErr <- e
+					eh.ChanTransactionErr <- e
 				case EventTypeWorkflow:
 					var e *eventWorkflowError
 					err := json.Unmarshal(m.Value, e)
@@ -263,7 +263,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 						log.Println(err)
 						return
 					}
-					eh.cWorkflowErr <- e
+					eh.ChanWorkflowErr <- e
 				case EventTypeTask:
 					var e *eventTaskError
 					err := json.Unmarshal(m.Value, e)
@@ -271,7 +271,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 						log.Println(err)
 						return
 					}
-					eh.cTaskErr <- e
+					eh.ChanTaskErr <- e
 				case EventTypeSystem:
 					var e *eventSystemError
 					err := json.Unmarshal(m.Value, e)
@@ -279,7 +279,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 						log.Println(err)
 						return
 					}
-					eh.cSystemErr <- e
+					eh.ChanSystemErr <- e
 				}
 				log.Printf(`Unknow event type: %v`, be)
 			} else {
@@ -291,7 +291,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 						log.Println(err)
 						return
 					}
-					eh.cTransaction <- e
+					eh.ChanTransaction <- e
 				case EventTypeWorkflow:
 					var e *eventWorkflow
 					err := json.Unmarshal(m.Value, e)
@@ -299,7 +299,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 						log.Println(err)
 						return
 					}
-					eh.cWorkflow <- e
+					eh.ChanWorkflow <- e
 				case EventTypeTask:
 					var e *eventTask
 					err := json.Unmarshal(m.Value, e)
@@ -307,7 +307,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 						log.Println(err)
 						return
 					}
-					eh.cTask <- e
+					eh.ChanTask <- e
 				case EventTypeSystem:
 					var e *eventSystem
 					err := json.Unmarshal(m.Value, e)
@@ -315,7 +315,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 						log.Println(err)
 						return
 					}
-					eh.cSystem <- e
+					eh.ChanSystem <- e
 				}
 				log.Printf(`Unknow event type: %v`, be)
 			}
