@@ -4,6 +4,7 @@ import (
 	"context"
 	"encoding/json"
 	"fmt"
+	"log"
 	"strings"
 	"sync"
 	"time"
@@ -17,6 +18,17 @@ type KafkaClient struct {
 	kafkaServers []string
 	config       *sarama.Config
 	producer     sarama.AsyncProducer
+}
+
+type Watcher struct {
+	cTransaction    chan *eventTransaction
+	cTransactionErr chan *eventTransactionError
+	cWorkflow       chan *eventWorkflow
+	cWorkflowErr    chan *eventWorkflowError
+	cTask           chan *eventTask
+	cTaskErr        chan *eventTaskError
+	cSystem         chan *eventSystem
+	cSystemErr      chan *eventSystemError
 }
 
 func NewTaskResult(t *Task) *TaskResult {
@@ -43,7 +55,9 @@ func NewKafkaClient(kafkaServers string, namespace string, kafkaVersion string) 
 
 	config.Consumer.Group.Rebalance.Strategy = sarama.BalanceStrategySticky
 	config.Consumer.Offsets.Initial = sarama.OffsetOldest
+	config.Consumer.Offsets.AutoCommit.Enable = false
 	config.Consumer.Fetch.Max = 100
+	config.Consumer.MaxWaitTime = 100 * time.Millisecond
 
 	config.Producer.Compression = sarama.CompressionSnappy
 	config.Producer.Idempotent = true
@@ -62,7 +76,10 @@ func NewKafkaClient(kafkaServers string, namespace string, kafkaVersion string) 
 }
 
 func (w *KafkaClient) NewWorker(taskName string, tcb func(t *Task) *TaskResult, ccb func(t *Task) *TaskResult) goerror.Error {
-	c, err := sarama.NewConsumerGroup(w.kafkaServers, fmt.Sprintf(`melonade-%s.client`, w.namespace), w.config)
+	newConfig := *w.config
+	newConfig.Consumer.Offsets.Initial = sarama.OffsetNewest
+
+	c, err := sarama.NewConsumerGroup(w.kafkaServers, fmt.Sprintf(`melonade-%s.client`, w.namespace), &newConfig)
 	if err != nil {
 		return ErrUnableToCreateConsumer.WithCause(err)
 	}
@@ -72,6 +89,39 @@ func (w *KafkaClient) NewWorker(taskName string, tcb func(t *Task) *TaskResult, 
 	go func() {
 		for {
 			err := c.Consume(ctx, []string{fmt.Sprintf(`melonade.%s.task.%s`, w.namespace, taskName)}, &wh)
+			if err != nil {
+				fmt.Printf("consume error: %v\n", err)
+				time.Sleep(500 * time.Millisecond) // To prevent cpu 100% while kafka brokers are dead
+			}
+		}
+	}()
+	return nil
+}
+
+func (w *KafkaClient) NewEventWatcher(serviceName string) goerror.Error {
+	c, err := sarama.NewConsumerGroup(w.kafkaServers,
+		fmt.Sprintf(`melonade-%s-event-watcher-%s`, w.namespace, serviceName), w.config)
+	if err != nil {
+		return ErrUnableToCreateConsumer.WithCause(err)
+	}
+
+	wh := eventWatcherHandler{
+		&Watcher{
+			make(chan *eventTransaction),
+			make(chan *eventTransactionError),
+			make(chan *eventWorkflow),
+			make(chan *eventWorkflowError),
+			make(chan *eventTask),
+			make(chan *eventTaskError),
+			make(chan *eventSystem),
+			make(chan *eventSystemError),
+		},
+		w,
+	}
+	ctx := context.Background()
+	go func() {
+		for {
+			err := c.Consume(ctx, []string{fmt.Sprintf(`melonade.%s.task.%s`, w.namespace, serviceName)}, &wh)
 			if err != nil {
 				fmt.Printf("consume error: %v\n", err)
 				time.Sleep(500 * time.Millisecond) // To prevent cpu 100% while kafka brokers are dead
@@ -168,5 +218,96 @@ func (wh *workerHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim
 		}(m)
 	}
 	wg.Wait() // Wait for every task ran before pull for new batch
+	return nil
+}
+
+// eventWatcherHandler
+type eventWatcherHandler struct {
+	*Watcher
+	w *KafkaClient
+}
+
+// Setup is run at the beginning of a new session, before ConsumeClaim
+func (eh *eventWatcherHandler) Setup(sarama.ConsumerGroupSession) error { return nil }
+
+// Cleanup is run at the end of a session, once all ConsumeClaim goroutines have exited
+func (eh *eventWatcherHandler) Cleanup(sarama.ConsumerGroupSession) error { return nil }
+
+// ConsumeClaim must start a consumer loop of ConsumerGroupClaim's Messages().
+func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim sarama.ConsumerGroupClaim) error {
+	for m := range claim.Messages() {
+		go func(m *sarama.ConsumerMessage) {
+			session.MarkMessage(m, "")
+
+			var be baseEvent
+			json.Unmarshal(m.Value, be)
+
+			if be.IsError == true {
+				switch be.Type {
+				case EventTypeTransaction:
+					var e *eventTransactionError
+					err := json.Unmarshal(m.Value, e)
+					if err != nil {
+						log.Println(err)
+					}
+					eh.cTransactionErr <- e
+				case EventTypeWorkflow:
+					var e *eventWorkflowError
+					err := json.Unmarshal(m.Value, e)
+					if err != nil {
+						log.Println(err)
+					}
+					eh.cWorkflowErr <- e
+				case EventTypeTask:
+					var e *eventTaskError
+					err := json.Unmarshal(m.Value, e)
+					if err != nil {
+						log.Println(err)
+					}
+					eh.cTaskErr <- e
+				case EventTypeSystem:
+					var e *eventSystemError
+					err := json.Unmarshal(m.Value, e)
+					if err != nil {
+						log.Println(err)
+					}
+					eh.cSystemErr <- e
+				}
+				log.Printf(`Unknow event type: %v`, be)
+			} else {
+				switch be.Type {
+				case EventTypeTransaction:
+					var e *eventTransaction
+					err := json.Unmarshal(m.Value, e)
+					if err != nil {
+						log.Println(err)
+					}
+					eh.cTransaction <- e
+				case EventTypeWorkflow:
+					var e *eventWorkflow
+					err := json.Unmarshal(m.Value, e)
+					if err != nil {
+						log.Println(err)
+					}
+					eh.cWorkflow <- e
+				case EventTypeTask:
+					var e *eventTask
+					err := json.Unmarshal(m.Value, e)
+					if err != nil {
+						log.Println(err)
+					}
+					eh.cTask <- e
+				case EventTypeSystem:
+					var e *eventSystem
+					err := json.Unmarshal(m.Value, e)
+					if err != nil {
+						log.Println(err)
+					}
+					eh.cSystem <- e
+				}
+				log.Printf(`Unknow event type: %v`, be)
+			}
+		}(m)
+	}
 	return nil
 }
