@@ -55,7 +55,7 @@ func NewKafkaClient(kafkaServers string, namespace string, kafkaVersion string) 
 
 	config.Consumer.Group.Rebalance.Strategy = sarama.BalanceStrategySticky
 	config.Consumer.Offsets.Initial = sarama.OffsetOldest
-	config.Consumer.Offsets.AutoCommit.Enable = false
+	config.Consumer.Offsets.AutoCommit.Enable = true // https://github.com/Shopify/sarama/issues/1221
 	config.Consumer.Fetch.Max = 100
 	config.Consumer.MaxWaitTime = 100 * time.Millisecond
 
@@ -121,7 +121,7 @@ func (w *KafkaClient) NewEventWatcher(serviceName string) (*Watcher, goerror.Err
 	ctx := context.Background()
 	go func() {
 		for {
-			err := c.Consume(ctx, []string{fmt.Sprintf(`melonade.%s.task.%s`, w.namespace, serviceName)}, &wh)
+			err := c.Consume(ctx, []string{fmt.Sprintf(`melonade.%s.store`, w.namespace)}, &wh)
 			if err != nil {
 				fmt.Printf("consume error: %v\n", err)
 				time.Sleep(500 * time.Millisecond) // To prevent cpu 100% while kafka brokers are dead
@@ -249,75 +249,78 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 			if be.IsError == true {
 				switch be.Type {
 				case EventTypeTransaction:
-					var e *eventTransactionError
-					err := json.Unmarshal(m.Value, e)
+					var e eventTransactionError
+					err := json.Unmarshal(m.Value, &e)
 					if err != nil {
 						log.Println(err)
 						return
 					}
-					eh.ChanTransactionErr <- e
+					eh.ChanTransactionErr <- &e
 				case EventTypeWorkflow:
-					var e *eventWorkflowError
-					err := json.Unmarshal(m.Value, e)
+					var e eventWorkflowError
+					err := json.Unmarshal(m.Value, &e)
 					if err != nil {
 						log.Println(err)
 						return
 					}
-					eh.ChanWorkflowErr <- e
+					eh.ChanWorkflowErr <- &e
 				case EventTypeTask:
-					var e *eventTaskError
-					err := json.Unmarshal(m.Value, e)
+					var e eventTaskError
+					err := json.Unmarshal(m.Value, &e)
 					if err != nil {
 						log.Println(err)
 						return
 					}
-					eh.ChanTaskErr <- e
+					eh.ChanTaskErr <- &e
 				case EventTypeSystem:
-					var e *eventSystemError
-					err := json.Unmarshal(m.Value, e)
+					var e eventSystemError
+					err := json.Unmarshal(m.Value, &e)
 					if err != nil {
 						log.Println(err)
 						return
 					}
-					eh.ChanSystemErr <- e
+					eh.ChanSystemErr <- &e
+				default:
+					log.Printf(`Unknow event type: %v`, be)
 				}
-				log.Printf(`Unknow event type: %v`, be)
 			} else {
 				switch be.Type {
 				case EventTypeTransaction:
-					var e *eventTransaction
-					err := json.Unmarshal(m.Value, e)
+					var e eventTransaction
+					err := json.Unmarshal(m.Value, &e)
 					if err != nil {
+						log.Println(string(m.Value))
 						log.Println(err)
 						return
 					}
-					eh.ChanTransaction <- e
+					eh.ChanTransaction <- &e
 				case EventTypeWorkflow:
-					var e *eventWorkflow
-					err := json.Unmarshal(m.Value, e)
+					var e eventWorkflow
+					err := json.Unmarshal(m.Value, &e)
 					if err != nil {
 						log.Println(err)
 						return
 					}
-					eh.ChanWorkflow <- e
+					eh.ChanWorkflow <- &e
 				case EventTypeTask:
-					var e *eventTask
-					err := json.Unmarshal(m.Value, e)
+					var e eventTask
+					err := json.Unmarshal(m.Value, &e)
 					if err != nil {
 						log.Println(err)
 						return
 					}
-					eh.ChanTask <- e
+					eh.ChanTask <- &e
 				case EventTypeSystem:
-					var e *eventSystem
-					err := json.Unmarshal(m.Value, e)
+					var e eventSystem
+					err := json.Unmarshal(m.Value, &e)
 					if err != nil {
 						log.Println(err)
 						return
 					}
-					eh.ChanSystem <- e
+					eh.ChanSystem <- &e
+				default:
+					log.Printf(`Unknow event type: %v`, be)
 				}
-				log.Printf(`Unknow event type: %v`, be)
 			}
 		}(m)
 	}
