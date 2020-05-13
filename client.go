@@ -41,12 +41,16 @@ func (c *Client) StartWorkflow(ctx context.Context, workflowName, revision, tran
 		data = jsonData
 	}
 
-	path, err := url.Parse(fmt.Sprintf("/v1/transaction/%s/%s?transactionId=%s", workflowName, revision, transactionId))
+	path, err := url.Parse(fmt.Sprintf("%s/v1/transaction/%s/%s", c.processManagerEndpoint, workflowName, revision))
 	if err != nil {
 		return nil, errWithInput(ErrUnableParseUrlRequest, workflowName, revision, transactionId, payload).WithCause(err)
 	}
 
-	req, err := http.NewRequest(http.MethodPost, fmt.Sprint(c.processManagerEndpoint+path.EscapedPath()), bytes.NewBuffer(data))
+	params := url.Values{}
+	params.Add("transactionId", transactionId)
+	path.RawQuery = params.Encode()
+
+	req, err := http.NewRequest(http.MethodPost, path.String(), bytes.NewBuffer(data))
 	if err != nil {
 		return nil, errWithInput(ErrUnableCreateRequestStartWorkflow, workflowName, revision, transactionId, payload).WithCause(err)
 	}
