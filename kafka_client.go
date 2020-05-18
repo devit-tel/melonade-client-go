@@ -21,14 +21,14 @@ type KafkaClient struct {
 }
 
 type Watcher struct {
-	ChanTransaction    chan *eventTransaction
-	ChanTransactionErr chan *eventTransactionError
-	ChanWorkflow       chan *eventWorkflow
-	ChanWorkflowErr    chan *eventWorkflowError
-	ChanTask           chan *eventTask
-	ChanTaskErr        chan *eventTaskError
-	ChanSystem         chan *eventSystem
-	ChanSystemErr      chan *eventSystemError
+	ChanTransaction    chan *EventTransaction
+	ChanTransactionErr chan *EventTransactionError
+	ChanWorkflow       chan *EventWorkflow
+	ChanWorkflowErr    chan *EventWorkflowError
+	ChanTask           chan *EventTask
+	ChanTaskErr        chan *EventTaskError
+	ChanSystem         chan *EventSystem
+	ChanSystemErr      chan *EventSystemError
 }
 
 func NewTaskResult(t *Task) *TaskResult {
@@ -104,14 +104,14 @@ func (w *KafkaClient) NewEventWatcher(serviceName string) (*Watcher, goerror.Err
 
 	wh := eventWatcherHandler{
 		&Watcher{
-			make(chan *eventTransaction),
-			make(chan *eventTransactionError),
-			make(chan *eventWorkflow),
-			make(chan *eventWorkflowError),
-			make(chan *eventTask),
-			make(chan *eventTaskError),
-			make(chan *eventSystem),
-			make(chan *eventSystemError),
+			make(chan *EventTransaction),
+			make(chan *EventTransactionError),
+			make(chan *EventWorkflow),
+			make(chan *EventWorkflowError),
+			make(chan *EventTask),
+			make(chan *EventTaskError),
+			make(chan *EventSystem),
+			make(chan *EventSystemError),
 		},
 		w,
 	}
@@ -144,7 +144,7 @@ func (w *KafkaClient) StartTransaction(tID string, wName string, wRev string, in
 	c := commandStartTransaction{
 		TransactionID: tID,
 		Type:          CommandTypeStartTransaction,
-		WorkflowRef: &workflowRef{
+		WorkflowRef: &WorkflowRef{
 			Name: wName,
 			Rev:  wRev,
 		},
@@ -236,7 +236,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 		go func(m *sarama.ConsumerMessage) {
 			session.MarkMessage(m, "")
 
-			var be baseEvent
+			var be BaseEvent
 			err := json.Unmarshal(m.Value, &be)
 			if err != nil {
 				log.Println(err)
@@ -246,7 +246,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 			if be.IsError == true {
 				switch be.Type {
 				case EventTypeTransaction:
-					var e eventTransactionError
+					var e EventTransactionError
 					err := json.Unmarshal(m.Value, &e)
 					if err != nil {
 						log.Println(err)
@@ -254,7 +254,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 					}
 					eh.ChanTransactionErr <- &e
 				case EventTypeWorkflow:
-					var e eventWorkflowError
+					var e EventWorkflowError
 					err := json.Unmarshal(m.Value, &e)
 					if err != nil {
 						log.Println(err)
@@ -262,7 +262,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 					}
 					eh.ChanWorkflowErr <- &e
 				case EventTypeTask:
-					var e eventTaskError
+					var e EventTaskError
 					err := json.Unmarshal(m.Value, &e)
 					if err != nil {
 						log.Println(err)
@@ -270,7 +270,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 					}
 					eh.ChanTaskErr <- &e
 				case EventTypeSystem:
-					var e eventSystemError
+					var e EventSystemError
 					err := json.Unmarshal(m.Value, &e)
 					if err != nil {
 						log.Println(err)
@@ -283,7 +283,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 			} else {
 				switch be.Type {
 				case EventTypeTransaction:
-					var e eventTransaction
+					var e EventTransaction
 					err := json.Unmarshal(m.Value, &e)
 					if err != nil {
 						log.Println(string(m.Value))
@@ -292,7 +292,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 					}
 					eh.ChanTransaction <- &e
 				case EventTypeWorkflow:
-					var e eventWorkflow
+					var e EventWorkflow
 					err := json.Unmarshal(m.Value, &e)
 					if err != nil {
 						log.Println(err)
@@ -300,7 +300,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 					}
 					eh.ChanWorkflow <- &e
 				case EventTypeTask:
-					var e eventTask
+					var e EventTask
 					err := json.Unmarshal(m.Value, &e)
 					if err != nil {
 						log.Println(err)
@@ -308,7 +308,7 @@ func (eh *eventWatcherHandler) ConsumeClaim(session sarama.ConsumerGroupSession,
 					}
 					eh.ChanTask <- &e
 				case EventTypeSystem:
-					var e eventSystem
+					var e EventSystem
 					err := json.Unmarshal(m.Value, &e)
 					if err != nil {
 						log.Println(err)

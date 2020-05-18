@@ -150,13 +150,13 @@ type Task struct {
 	Logs              []interface{} `json:"logs"`
 }
 
-type transactionResult struct {
+type TransactionResult struct {
 	TransactionID string      `json:"transactionId"`
 	Status        TaskStatus  `json:"status"`
 	Output        interface{} `json:"output"`
 }
 
-type workflowResult struct {
+type WorkflowResult struct {
 	TransactionID string         `json:"transactionId"`
 	WorkflowID    string         `json:"workflowId"`
 	Status        WorkflowStatus `json:"status"`
@@ -173,7 +173,7 @@ type TaskResult struct {
 	IsSystem      bool          `json:"isSystem"`   // Internal usage
 }
 
-type workflowRef struct {
+type WorkflowRef struct {
 	Name string `json:"name"`
 	Rev  string `json:"rev"`
 }
@@ -181,18 +181,18 @@ type workflowRef struct {
 type commandStartTransaction struct {
 	TransactionID string       `json:"transactionId"`
 	Type          CommandType  `json:"type"` // CommandTypeStartTransaction
-	WorkflowRef   *workflowRef `json:"workflowRef,omitempty"`
+	WorkflowRef   *WorkflowRef `json:"WorkflowRef,omitempty"`
 	Input         interface{}  `json:"input"`
 	Tags          []string     `json:"tags"`
 }
 
-type baseEvent struct {
+type BaseEvent struct {
 	TransactionID string    `json:"transactionId"`
 	Type          EventType `json:"type"`    // TRANSACTION
 	IsError       bool      `json:"isError"` // false
 }
 
-type eventTransaction struct {
+type EventTransaction struct {
 	TransactionID string      `json:"transactionId"`
 	Type          EventType   `json:"type"`    // TRANSACTION
 	IsError       bool        `json:"isError"` // false
@@ -200,15 +200,15 @@ type eventTransaction struct {
 	Details       Transaction `json:"details"`
 }
 
-type eventTransactionError struct {
+type EventTransactionError struct {
 	TransactionID string            `json:"transactionId"`
 	Type          EventType         `json:"type"`    // TRANSACTION
 	IsError       bool              `json:"isError"` // true
 	Timestamp     int64             `json:"timestamp"`
-	Details       transactionResult `json:"details"`
+	Details       TransactionResult `json:"details"`
 }
 
-type eventWorkflow struct {
+type EventWorkflow struct {
 	TransactionID string    `json:"transactionId"`
 	Type          EventType `json:"type"`    // WORKFLOW
 	IsError       bool      `json:"isError"` // false
@@ -216,15 +216,15 @@ type eventWorkflow struct {
 	Details       Workflow  `json:"details"`
 }
 
-type eventWorkflowError struct {
+type EventWorkflowError struct {
 	TransactionID string         `json:"transactionId"`
 	Type          EventType      `json:"type"`    // WORKFLOW
 	IsError       bool           `json:"isError"` // true
 	Timestamp     int64          `json:"timestamp"`
-	Details       workflowResult `json:"details"`
+	Details       WorkflowResult `json:"details"`
 }
 
-type eventTask struct {
+type EventTask struct {
 	TransactionID string    `json:"transactionId"`
 	Type          EventType `json:"type"`    // TASK
 	IsError       bool      `json:"isError"` // false
@@ -232,7 +232,7 @@ type eventTask struct {
 	Details       Task      `json:"details"`
 }
 
-type eventTaskError struct {
+type EventTaskError struct {
 	TransactionID string     `json:"transactionId"`
 	Type          EventType  `json:"type"`    // TASK
 	IsError       bool       `json:"isError"` // true
@@ -240,7 +240,7 @@ type eventTaskError struct {
 	Details       TaskResult `json:"details"`
 }
 
-type eventSystem struct {
+type EventSystem struct {
 	TransactionID string      `json:"transactionId"`
 	Type          EventType   `json:"type"`    // SYSTEM
 	IsError       bool        `json:"isError"` // false
@@ -248,7 +248,7 @@ type eventSystem struct {
 	Timestamp     int64       `json:"timestamp"`
 }
 
-type eventSystemError struct {
+type EventSystemError struct {
 	TransactionID string      `json:"transactionId"`
 	Type          EventType   `json:"type"`    // SYSTEM
 	IsError       bool        `json:"isError"` // true
