@@ -54,7 +54,7 @@ func NewKafkaClient(kafkaServers string, namespace string, kafkaVersion string) 
 	config.Net.MaxOpenRequests = 1
 
 	config.Consumer.Group.Rebalance.Strategy = sarama.BalanceStrategySticky
-	config.Consumer.Offsets.Initial = sarama.OffsetOldest
+	config.Consumer.Offsets.Initial = sarama.OffsetNewest
 	config.Consumer.Offsets.AutoCommit.Enable = true // https://github.com/Shopify/sarama/issues/1221
 	config.Consumer.Fetch.Max = 100
 	config.Consumer.MaxWaitTime = 100 * time.Millisecond
@@ -76,10 +76,7 @@ func NewKafkaClient(kafkaServers string, namespace string, kafkaVersion string) 
 }
 
 func (w *KafkaClient) NewWorker(taskName string, tcb func(t *Task) *TaskResult, ccb func(t *Task) *TaskResult) goerror.Error {
-	newConfig := *w.config
-	newConfig.Consumer.Offsets.Initial = sarama.OffsetNewest
-
-	c, err := sarama.NewConsumerGroup(w.kafkaServers, fmt.Sprintf(`melonade-%s.client`, w.namespace), &newConfig)
+	c, err := sarama.NewConsumerGroup(w.kafkaServers, fmt.Sprintf(`melonade-%s-client-%s`, w.namespace, taskName), w.config)
 	if err != nil {
 		return ErrUnableToCreateConsumer.WithCause(err)
 	}
