@@ -104,7 +104,7 @@ type WorkflowDefinition struct {
 
 type Transaction struct {
 	TransactionID      string             `json:"transactionId"`
-	Status             string             `json:"status"`
+	Status             TransactionStatus  `json:"status"`
 	Input              interface{}        `json:"input"`
 	Output             interface{}        `json:"output"`
 	CreateTime         int64              `json:"createTime"`
@@ -117,7 +117,7 @@ type Workflow struct {
 	TransactionID      string             `json:"transactionId"`
 	Type               string             `json:"type"`
 	WorkflowID         string             `json:"workflowId"`
-	Status             string             `json:"status"`
+	Status             WorkflowStatus     `json:"status"`
 	Retries            int                `json:"retries"`
 	Input              interface{}        `json:"input"`
 	Output             interface{}        `json:"output"`
