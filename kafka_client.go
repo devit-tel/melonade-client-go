@@ -55,6 +55,7 @@ func NewKafkaClient(kafkaServers string, namespace string, kafkaVersion string) 
 
 	config.Consumer.Group.Rebalance.Strategy = sarama.BalanceStrategySticky
 	config.Consumer.Offsets.Initial = sarama.OffsetNewest
+	config.Consumer.Offsets.Retention = 10000000 * time.Minute
 	config.Consumer.Offsets.AutoCommit.Enable = true // https://github.com/Shopify/sarama/issues/1221
 	config.Consumer.Fetch.Max = 100
 	config.Consumer.MaxWaitTime = 100 * time.Millisecond
@@ -199,6 +200,13 @@ func (wh *workerHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim
 			tr.Status = TaskStatusInProgress
 			wh.w.UpdateTask(tr)
 
+			defer func() {
+				if err := recover(); err != nil {
+					tr.Status = TaskStatusFailed
+					tr.Output = fmt.Sprintf("callback error: %v", err)
+					wh.w.UpdateTask(tr)
+				}
+			}()
 			switch t.Type {
 			case TaskTypeTask:
 				tr = wh.taskCallback(&t)
