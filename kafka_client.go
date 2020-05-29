@@ -63,15 +63,28 @@ func NewKafkaClient(kafkaServers string, namespace string, kafkaVersion string) 
 	config.Producer.Compression = sarama.CompressionSnappy
 	config.Producer.Idempotent = true
 	config.Producer.RequiredAcks = sarama.WaitForAll
-	config.Producer.Retry.Max = 10000000
+	config.Producer.Retry.Max = 100
 	config.Producer.Flush.MaxMessages = 100
 	config.Producer.Flush.Frequency = time.Millisecond
+	config.Producer.Return.Successes = true
+	config.Producer.Return.Errors = true
 
 	ks := strings.Split(kafkaServers, ",")
 	pd, err := sarama.NewAsyncProducer(ks, config)
 	if err != nil {
 		return nil, ErrUnableToCreateProducer.WithCause(err)
 	}
+
+	go func() {
+		for {
+			select {
+			case result := <-pd.Successes():
+				log.Printf("> sent to partition  %d at offset %d\n", result.Partition, result.Offset)
+			case err := <-pd.Errors():
+				log.Println("Failed to produce message", err)
+			}
+		}
+	}()
 
 	return &KafkaClient{namespace, ks, config, pd}, nil
 }
