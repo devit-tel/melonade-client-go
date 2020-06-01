@@ -173,7 +173,6 @@ func (wh *workerHandler) ConsumeClaim(session sarama.ConsumerGroupSession, claim
 	var wg sync.WaitGroup
 	for m := range claim.Messages() {
 		wg.Add(1)
-
 		go func(m *sarama.ConsumerMessage) {
 			defer wg.Done()
 			currentMillis := time.Now().UnixNano() / int64(time.Millisecond)

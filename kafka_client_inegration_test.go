@@ -12,7 +12,7 @@ import (
 
 func TestWorkerClient(t *testing.T) {
 	t.Run("Create worker client", func(t *testing.T) {
-		const batchNumber = 1
+		const batchNumber = 120
 		transactionPrefix := time.Now().Format("2006-01-02T-15-04-05")
 		cli, err := NewKafkaClient("localhost:29092", "docker-compose", "2.3.1")
 		if err != nil {
@@ -21,12 +21,10 @@ func TestWorkerClient(t *testing.T) {
 
 		taskNames := []string{"t1", "t2", "t3"}
 		var wg sync.WaitGroup
-		wg.Add(len(taskNames) * batchNumber)
 		for _, tn := range taskNames {
 			err := cli.NewWorker(
 				tn,
 				func(t *Task) *TaskResult {
-					defer wg.Done()
 					tr := NewTaskResult(t)
 					tr.Status = TaskStatusCompleted
 					tr.Output = fmt.Sprintf(`Hello from %v`, t.TaskName)
@@ -55,20 +53,19 @@ func TestWorkerClient(t *testing.T) {
 			for {
 				e := <-watcher
 				switch e.(type) {
-				case EventTransaction:
-					td := e.(EventTransaction)
-					log.Printf("Transaction %s was %s", td.TransactionID, td.Details.Status)
+				case *EventTransaction:
+					td := e.(*EventTransaction)
+					log.Printf("Transaction %s was %s\n", td.TransactionID, td.Details.Status)
 					wg.Done()
-				case EventWorkflow:
-					wd := e.(EventWorkflow)
-					log.Printf("Workflow %s was %s", wd.Details.WorkflowID, wd.Details.Status)
+				case *EventWorkflow:
+					wd := e.(*EventWorkflow)
+					log.Printf("Workflow %s was %s\n", wd.Details.WorkflowID, wd.Details.Status)
 					wg.Done()
 				}
-
 			}
 		}()
 
-		time.Sleep(5 * time.Second) // Wait for kafka consumer group rebalanced
+		time.Sleep(10 * time.Second) // Wait for kafka consumer group rebalanced
 		for i := 0; i < batchNumber; i++ {
 			transactionID := fmt.Sprintf(`test-%s-%d`, transactionPrefix, i)
 			go cli.StartTransaction(transactionID, "simple", "1", nil, []string{"test"})
@@ -76,6 +73,6 @@ func TestWorkerClient(t *testing.T) {
 		}
 
 		wg.Wait()                   // Wait for all worker to finish (if everything work correctly)
-		time.Sleep(1 * time.Second) // Wait for producer sent message
+		time.Sleep(3 * time.Second) // Wait for producer sent message
 	})
 }
