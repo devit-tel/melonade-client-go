@@ -12,7 +12,7 @@ import (
 
 func TestWorkerClient(t *testing.T) {
 	t.Run("Create worker client", func(t *testing.T) {
-		const batchNumber = 100
+		const batchNumber = 1
 		transactionPrefix := time.Now().Format("2006-01-02T-15-04-05")
 		cli, err := NewKafkaClient("localhost:29092", "docker-compose", "2.3.1")
 		if err != nil {
@@ -53,14 +53,18 @@ func TestWorkerClient(t *testing.T) {
 
 		go func() {
 			for {
-				select {
-				case e := <-watcher.ChanTransaction:
-					log.Printf("Transaction %s was %s", e.TransactionID, e.Details.Status)
+				e := <-watcher
+				switch e.(type) {
+				case EventTransaction:
+					td := e.(EventTransaction)
+					log.Printf("Transaction %s was %s", td.TransactionID, td.Details.Status)
 					wg.Done()
-				case e := <-watcher.ChanWorkflow:
-					log.Printf("Transaction %s was %s", e.TransactionID, e.Details.Status)
+				case EventWorkflow:
+					wd := e.(EventWorkflow)
+					log.Printf("Workflow %s was %s", wd.Details.WorkflowID, wd.Details.Status)
 					wg.Done()
 				}
+
 			}
 		}()
 

@@ -181,7 +181,7 @@ type WorkflowRef struct {
 type commandStartTransaction struct {
 	TransactionID string       `json:"transactionId"`
 	Type          CommandType  `json:"type"` // CommandTypeStartTransaction
-	WorkflowRef   *WorkflowRef `json:"WorkflowRef,omitempty"`
+	WorkflowRef   *WorkflowRef `json:"workflowRef,omitempty"`
 	Input         interface{}  `json:"input"`
 	Tags          []string     `json:"tags"`
 }
