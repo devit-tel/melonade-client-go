@@ -50,7 +50,7 @@ func NewKafkaClient(kafkaServers string, namespace string, kafkaVersion string) 
 	config.Consumer.MaxWaitTime = 100 * time.Millisecond
 
 	config.Producer.Compression = sarama.CompressionSnappy
-	config.Producer.Idempotent = true
+	config.Producer.Idempotent = false
 	config.Producer.RequiredAcks = sarama.WaitForAll
 	config.Producer.Retry.Max = 100
 	config.Producer.Flush.MaxMessages = 100
