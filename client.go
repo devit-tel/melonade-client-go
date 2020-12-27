@@ -30,7 +30,7 @@ func New(processManagerEndpoint string) Service {
 	}
 }
 
-func (c *Client) StartWorkflow(ctx context.Context, workflowName, revision, transactionId string, payload interface{}) (*StartWorkflowResponse, goerror.Error) {
+func (c *Client) StartWorkflowWithTags(ctx context.Context, workflowName, revision, transactionId string, payload interface{}, tags interface{}) (*StartWorkflowResponse, goerror.Error) {
 	var data []byte
 	if payload != nil {
 		jsonData, err := json.Marshal(payload)
@@ -41,6 +41,13 @@ func (c *Client) StartWorkflow(ctx context.Context, workflowName, revision, tran
 		data = jsonData
 	}
 
+	tagsJsonString, err := json.MarshalToString(tags)
+	if err != nil {
+		if err != nil {
+			return nil, errWithInputTag(ErrUnableParseInputPayload, workflowName, revision, transactionId, payload, tags).WithCause(err)
+		}
+	}
+
 	path, err := url.Parse(fmt.Sprintf("%s/v1/transaction/%s/%s", c.processManagerEndpoint, workflowName, revision))
 	if err != nil {
 		return nil, errWithInput(ErrUnableParseUrlRequest, workflowName, revision, transactionId, payload).WithCause(err)
@@ -48,6 +55,7 @@ func (c *Client) StartWorkflow(ctx context.Context, workflowName, revision, tran
 
 	params := url.Values{}
 	params.Add("transactionId", transactionId)
+	params.Add("tags", tagsJsonString)
 	path.RawQuery = params.Encode()
 
 	req, err := http.NewRequest(http.MethodPost, path.String(), bytes.NewBuffer(data))
@@ -76,10 +84,23 @@ func (c *Client) StartWorkflow(ctx context.Context, workflowName, revision, tran
 	return workflowResp, nil
 }
 
+func (c *Client) StartWorkflow(ctx context.Context, workflowName, revision, transactionId string, payload interface{}) (*StartWorkflowResponse, goerror.Error) {
+	return c.StartWorkflowWithTags(ctx, workflowName, revision, transactionId, payload, nil)
+}
+
 func errWithInput(err goerror.Error, workflowName, revision, transactionId string, payload interface{}) goerror.Error {
 	return err.WithKeyValueInput(
 		"workflowName", workflowName,
 		"revision", revision,
 		"transactionId", transactionId,
 		"payload", payload).WithCause(err)
+}
+
+func errWithInputTag(err goerror.Error, workflowName, revision, transactionId string, payload interface{}, tags interface{}) goerror.Error {
+	return err.WithKeyValueInput(
+		"workflowName", workflowName,
+		"revision", revision,
+		"transactionId", transactionId,
+		"payload", payload,
+		"tags", tags).WithCause(err)
 }
