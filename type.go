@@ -102,6 +102,18 @@ type WorkflowDefinition struct {
 	} `json:"retry"`
 }
 
+type TaskDefinition struct {
+	Name        string `json:"name"`
+	Description string `json:"description"`
+	AckTimeout  int    `json:"ackTimeout"`
+	Retry       struct {
+		Delay int `json:"delay"`
+		Limit int `json:"limit"`
+	} `json:"retry"`
+	SyncWorker bool `json:"syncWorker"`
+	Timeout    int  `json:"timeout"`
+}
+
 type Transaction struct {
 	TransactionID      string             `json:"transactionId"`
 	Status             TransactionStatus  `json:"status"`

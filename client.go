@@ -76,10 +76,127 @@ func (c *Client) StartWorkflow(ctx context.Context, workflowName, revision, tran
 	return workflowResp, nil
 }
 
+func (c *Client) GetWorkflowDefinitions() ([]*WorkflowDefinition, goerror.Error) {
+	resp, err := c.httpClient.Get(fmt.Sprintf("%s/v1/definition/workflow", c.processManagerEndpoint))
+	if err != nil {
+		return nil, ErrRequestFailed.WithCause(err)
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, ErrReadResponseBodyFailed.WithCause(err)
+	}
+
+	var r workflowDefinitionsResponse
+	err = json.Unmarshal(body, &r)
+	if err != nil {
+		return nil, ErrParseResponseBodyFailed.WithCause(err)
+	}
+
+	return r.Data, nil
+}
+
+func (c *Client) GetTaskDefinitions() ([]*TaskDefinition, goerror.Error) {
+	resp, err := c.httpClient.Get(fmt.Sprintf("%s/v1/definition/task", c.processManagerEndpoint))
+	if err != nil {
+		return nil, ErrRequestFailed.WithCause(err)
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, ErrReadResponseBodyFailed.WithCause(err)
+	}
+
+	var r taskDefinitionsResponse
+	err = json.Unmarshal(body, &r)
+	if err != nil {
+		return nil, ErrParseResponseBodyFailed.WithCause(err)
+	}
+
+	return r.Data, nil
+}
+
+func (c *Client) SetTaskDefinition(t TaskDefinition) goerror.Error {
+	b, err := json.Marshal(t)
+	if err != nil {
+		return ErrParseRequestBodyFailed.WithCause(err)
+	}
+
+	resp, err := c.httpClient.Post(fmt.Sprintf("%s/v1/definition/task", c.processManagerEndpoint), "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		return ErrRequestFailed.WithCause(err)
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return ErrReadResponseBodyFailed.WithCause(err)
+	}
+
+	var r melonadeResponse
+	err = json.Unmarshal(body, &r)
+	if err != nil {
+		return ErrParseResponseBodyFailed.WithCause(err)
+	}
+
+	if r.Success != true {
+		return ErrRequestNotSuccess.WithExtendMsg(r.Error)
+	}
+
+	return nil
+}
+
+func (c *Client) SetWorkflowDefinition(t WorkflowDefinition) goerror.Error {
+	b, err := json.Marshal(t)
+	if err != nil {
+		return ErrParseRequestBodyFailed.WithCause(err)
+	}
+
+	resp, err := c.httpClient.Post(fmt.Sprintf("%s/v1/definition/workflow", c.processManagerEndpoint), "application/json", bytes.NewBuffer(b))
+	if err != nil {
+		return ErrRequestFailed.WithCause(err)
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return ErrReadResponseBodyFailed.WithCause(err)
+	}
+
+	var r melonadeResponse
+	err = json.Unmarshal(body, &r)
+	if err != nil {
+		return ErrParseResponseBodyFailed.WithCause(err)
+	}
+
+	if r.Success != true {
+		return ErrRequestNotSuccess.WithExtendMsg(r.Error)
+	}
+
+	return nil
+}
+
 func errWithInput(err goerror.Error, workflowName, revision, transactionId string, payload interface{}) goerror.Error {
 	return err.WithKeyValueInput(
 		"workflowName", workflowName,
 		"revision", revision,
 		"transactionId", transactionId,
 		"payload", payload).WithCause(err)
+}
+
+type workflowDefinitionsResponse struct {
+	Data []*WorkflowDefinition `json:"data"`
+	melonadeResponse
+}
+
+type taskDefinitionsResponse struct {
+	Data []*TaskDefinition `json:"data"`
+	melonadeResponse
+}
+
+type melonadeResponse struct {
+	Error   string `json:"error"`
+	Success bool   `json:"success"`
 }
