@@ -142,7 +142,7 @@ func (c *Client) SetTaskDefinition(t TaskDefinition) goerror.Error {
 	}
 
 	if r.Success != true {
-		return ErrRequestNotSuccess.WithExtendMsg(r.Error)
+		return ErrRequestNotSuccess.WithExtendMsg(fmt.Sprintf("%v", r.Error))
 	}
 
 	return nil
@@ -172,7 +172,7 @@ func (c *Client) SetWorkflowDefinition(t WorkflowDefinition) goerror.Error {
 	}
 
 	if r.Success != true {
-		return ErrRequestNotSuccess.WithExtendMsg(r.Error)
+		return ErrRequestNotSuccess.WithExtendMsg(fmt.Sprintf("%v", r.Error))
 	}
 
 	return nil
@@ -197,6 +197,6 @@ type taskDefinitionsResponse struct {
 }
 
 type melonadeResponse struct {
-	Error   string `json:"error"`
-	Success bool   `json:"success"`
+	Error   map[string]interface{} `json:"error"`
+	Success bool                   `json:"success"`
 }
