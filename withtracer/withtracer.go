@@ -48,3 +48,19 @@ func (swt *ServiceWithTracer) StartWorkflow(ctx context.Context, workflowName, r
 
 	return resp, err
 }
+
+func (swt *ServiceWithTracer) GetWorkflowDefinitions() ([]*wrapService.WorkflowDefinition, goerror.Error) {
+	return swt.service.GetWorkflowDefinitions()
+}
+
+func (swt *ServiceWithTracer) GetTaskDefinitions() ([]*wrapService.TaskDefinition, goerror.Error) {
+	return swt.service.GetTaskDefinitions()
+}
+
+func (swt *ServiceWithTracer) SetTaskDefinition(t wrapService.TaskDefinition) goerror.Error {
+	return swt.service.SetTaskDefinition(t)
+}
+
+func (swt *ServiceWithTracer) SetWorkflowDefinition(t wrapService.WorkflowDefinition) goerror.Error {
+	return swt.service.SetWorkflowDefinition(t)
+}
