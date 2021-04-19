@@ -50,7 +50,7 @@ func (c *Client) StartWorkflow(ctx context.Context, workflowName, revision, tran
 	params.Add("transactionId", transactionId)
 	path.RawQuery = params.Encode()
 
-	req, err := http.NewRequest(http.MethodPost, path.String(), bytes.NewBuffer(data))
+	req, err := http.NewRequestWithContext(ctx, http.MethodPost, path.String(), bytes.NewBuffer(data))
 	if err != nil {
 		return nil, errWithInput(ErrUnableCreateRequestStartWorkflow, workflowName, revision, transactionId, payload).WithCause(err)
 	}
