@@ -6,7 +6,7 @@ import (
 	"github.com/devit-tel/goerror"
 )
 
-//go:generate mockery -name=Service
+//go:generate mockery --name=Service
 type Service interface {
 	StartWorkflow(ctx context.Context, workflowName, revision, transactionId string, payload interface{}) (*StartWorkflowResponse, goerror.Error)
 	GetWorkflowDefinitions() ([]*WorkflowDefinition, goerror.Error)
