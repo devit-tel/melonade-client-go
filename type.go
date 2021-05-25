@@ -162,6 +162,15 @@ type Task struct {
 	Logs              []interface{} `json:"logs"`
 }
 
+func (t *Task) ToTaskResult() *TaskResult {
+	return &TaskResult{
+		TransactionID: t.TransactionID,
+		TaskID:        t.TaskID,
+		Status:        t.Status,
+		IsSystem:      false,
+	}
+}
+
 type TransactionResult struct {
 	TransactionID string      `json:"transactionId"`
 	Status        TaskStatus  `json:"status"`
