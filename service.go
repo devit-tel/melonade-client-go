@@ -12,5 +12,9 @@ type Service interface {
 	GetWorkflowDefinitions() ([]*WorkflowDefinition, goerror.Error)
 	GetTaskDefinitions() ([]*TaskDefinition, goerror.Error)
 	SetTaskDefinition(t TaskDefinition) goerror.Error
+	CreateTaskDefinition(t TaskDefinition) goerror.Error
+	UpdateTaskDefinition(t TaskDefinition) goerror.Error
 	SetWorkflowDefinition(t WorkflowDefinition) goerror.Error
+	CreateWorkflowDefinition(t WorkflowDefinition) goerror.Error
+	UpdateWorkflowDefinition(t WorkflowDefinition) goerror.Error
 }
