@@ -270,6 +270,41 @@ func (c *Client) UpdateWorkflowDefinition(w WorkflowDefinition) goerror.Error {
 	return nil
 }
 
+func (c *Client) DeleteWorkflowDefinition(name, rev string) goerror.Error {
+	u, err := url.Parse(fmt.Sprintf("%s/v1/definition/workflow/%s/%s", c.processManagerEndpoint, name, rev))
+	if err != nil {
+		return ErrParseRequestBodyFailed.WithCause(err)
+	}
+	h := http.Header{}
+	h.Set("Content-type", "application/json")
+
+	resp, err := c.httpClient.Do(&http.Request{
+		Method: http.MethodDelete,
+		URL:    u,
+	})
+	if err != nil {
+		return ErrRequestFailed.WithCause(err)
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return ErrReadResponseBodyFailed.WithCause(err)
+	}
+
+	var r melonadeResponse
+	err = json.Unmarshal(body, &r)
+	if err != nil {
+		return ErrParseResponseBodyFailed.WithCause(err)
+	}
+
+	if r.Success != true {
+		return ErrRequestNotSuccess.WithExtendMsg(fmt.Sprintf("%+v", r.Error))
+	}
+
+	return nil
+}
+
 func errWithInput(err goerror.Error, workflowName, revision, transactionId string, payload interface{}) goerror.Error {
 	return err.WithKeyValueInput(
 		"workflowName", workflowName,

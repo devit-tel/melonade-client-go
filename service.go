@@ -17,4 +17,5 @@ type Service interface {
 	SetWorkflowDefinition(t WorkflowDefinition) goerror.Error
 	CreateWorkflowDefinition(t WorkflowDefinition) goerror.Error
 	UpdateWorkflowDefinition(t WorkflowDefinition) goerror.Error
+	DeleteWorkflowDefinition(name, rev string) goerror.Error
 }
