@@ -146,7 +146,7 @@ func (c *Client) SetTaskDefinition(t TaskDefinition) goerror.Error {
 	}
 
 	if r.Success != true {
-		return ErrRequestNotSuccess.WithExtendMsg(fmt.Sprintf("%v", r.Error))
+		return ErrRequestNotSuccess.WithExtendMsg(fmt.Sprintf("%+v", r.Error))
 	}
 
 	return nil
@@ -188,7 +188,7 @@ func (c *Client) UpdateTaskDefinition(t TaskDefinition) goerror.Error {
 	}
 
 	if r.Success != true {
-		return ErrRequestNotSuccess.WithExtendMsg(fmt.Sprintf("%v", r.Error))
+		return ErrRequestNotSuccess.WithExtendMsg(fmt.Sprintf("%+v", r.Error))
 	}
 
 	return nil
@@ -222,7 +222,7 @@ func (c *Client) SetWorkflowDefinition(t WorkflowDefinition) goerror.Error {
 	}
 
 	if r.Success != true {
-		return ErrRequestNotSuccess.WithExtendMsg(fmt.Sprintf("%v", r.Error))
+		return ErrRequestNotSuccess.WithExtendMsg(fmt.Sprintf("%+v", r.Error))
 	}
 
 	return nil
@@ -264,7 +264,7 @@ func (c *Client) UpdateWorkflowDefinition(w WorkflowDefinition) goerror.Error {
 	}
 
 	if r.Success != true {
-		return ErrRequestNotSuccess.WithExtendMsg(fmt.Sprintf("%v", r.Error))
+		return ErrRequestNotSuccess.WithExtendMsg(fmt.Sprintf("%+v", r.Error))
 	}
 
 	return nil
