@@ -328,7 +328,7 @@ func (c *Client) GetTransactionData(tID string) (*Transaction, goerror.Error) {
 	}
 
 	if r.Data == nil {
-		return nil, ErrRequestNotSuccess.WithExtendMsg("no transaction")
+		return nil, ErrTransactionNotFound
 	}
 
 	return r.Data, nil

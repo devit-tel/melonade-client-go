@@ -18,4 +18,5 @@ var (
 	ErrParseResponseBodyFailed          = goerror.DefineInternalServerError("ErrParseResponseBodyFailed", "parse response body failed")
 	ErrParseRequestBodyFailed           = goerror.DefineInternalServerError("ErrParseRequestBodyFailed", "parse request body failed")
 	ErrRequestNotSuccess                = goerror.DefineInternalServerError("ErrRequestNotSuccess", "request not success")
+	ErrTransactionNotFound              = goerror.DefineInternalServerError("ErrTransactionNotFound", "transaction not found")
 )
