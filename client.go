@@ -305,6 +305,35 @@ func (c *Client) DeleteWorkflowDefinition(name, rev string) goerror.Error {
 	return nil
 }
 
+func (c *Client) GetTransactionData(tID string) (*Transaction, goerror.Error) {
+	resp, err := c.httpClient.Get(fmt.Sprintf("%s/v1/trabsaction/%s", c.processManagerEndpoint, tID))
+	if err != nil {
+		return nil, ErrRequestFailed.WithCause(err)
+	}
+
+	defer resp.Body.Close()
+	body, err := ioutil.ReadAll(resp.Body)
+	if err != nil {
+		return nil, ErrReadResponseBodyFailed.WithCause(err)
+	}
+
+	var r transactionResponse
+	err = json.Unmarshal(body, &r)
+	if err != nil {
+		return nil, ErrParseResponseBodyFailed.WithCause(err)
+	}
+
+	if r.Success != true {
+		return nil, ErrRequestNotSuccess.WithExtendMsg(fmt.Sprintf("%+v", r.Error))
+	}
+
+	if r.Data == nil {
+		return nil, ErrRequestNotSuccess.WithExtendMsg("no transaction")
+	}
+
+	return r.Data, nil
+}
+
 func errWithInput(err goerror.Error, workflowName, revision, transactionId string, payload interface{}) goerror.Error {
 	return err.WithKeyValueInput(
 		"workflowName", workflowName,
@@ -320,6 +349,11 @@ type workflowDefinitionsResponse struct {
 
 type taskDefinitionsResponse struct {
 	Data []*TaskDefinition `json:"data"`
+	melonadeResponse
+}
+
+type transactionResponse struct {
+	Data *Transaction `json:"data"`
 	melonadeResponse
 }
 
