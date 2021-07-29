@@ -16,6 +16,30 @@ type ServiceWithTracer struct {
 	service wrapService.Service
 }
 
+func (swt *ServiceWithTracer) CreateTaskDefinition(t wrapService.TaskDefinition) goerror.Error {
+	panic("implement me")
+}
+
+func (swt *ServiceWithTracer) UpdateTaskDefinition(t wrapService.TaskDefinition) goerror.Error {
+	panic("implement me")
+}
+
+func (swt *ServiceWithTracer) CreateWorkflowDefinition(t wrapService.WorkflowDefinition) goerror.Error {
+	panic("implement me")
+}
+
+func (swt *ServiceWithTracer) UpdateWorkflowDefinition(t wrapService.WorkflowDefinition) goerror.Error {
+	panic("implement me")
+}
+
+func (swt *ServiceWithTracer) DeleteWorkflowDefinition(name, rev string) goerror.Error {
+	panic("implement me")
+}
+
+func (swt *ServiceWithTracer) GetTransactionData(tID string) (*wrapService.Transaction, goerror.Error) {
+	panic("implement me")
+}
+
 func Wrap(service wrapService.Service) wrapService.Service {
 	return &ServiceWithTracer{
 		service: service,
