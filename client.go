@@ -306,7 +306,7 @@ func (c *Client) DeleteWorkflowDefinition(name, rev string) goerror.Error {
 }
 
 func (c *Client) GetTransactionData(tID string) (*Transaction, goerror.Error) {
-	resp, err := c.httpClient.Get(fmt.Sprintf("%s/v1/trabsaction/%s", c.processManagerEndpoint, tID))
+	resp, err := c.httpClient.Get(fmt.Sprintf("%s/v1/transaction/%s", c.processManagerEndpoint, tID))
 	if err != nil {
 		return nil, ErrRequestFailed.WithCause(err)
 	}
